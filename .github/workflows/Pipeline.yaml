@@ -80,11 +80,8 @@ jobs:
     - name: Apply Kubernetes Deployment
       run: kubectl apply -f Deployment-Service.yaml
 
-    - name: Wait for deployment to be available
-      run: kubectl rollout status deployment/java-app-deployment
+    - name: Check services status
+      run: kubectl get services
 
     - name: Check pods status
       run: kubectl get pods
-
-    - name: Check services status
-      run: kubectl get services
