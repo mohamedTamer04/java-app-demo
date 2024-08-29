@@ -1,1 +1,93 @@
+name: CI/CD Pipeline
 
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+
+  # Job to run tests using SonarCloud
+  test:
+    name: Test with SonarCloud
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+        with:
+          fetch-depth: 0
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        with:
+          args: >
+            -Dsonar.projectKey=mohamedTamer04_java-app-demo
+            -Dsonar.organization=mohamedtamer04
+            -Dsonar.host.url=https://sonarcloud.io
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub token
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}    # SonarCloud token
+
+
+# Job to deploy to Minikube
+  build:
+    name: Build Container Image with Podman
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Podman
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install podman
+
+      - name: Build container image
+        run: podman build -t docker.io/mohamedeid123/java-hello-app:v1.5 .
+
+      - name: Log in to Docker Hub
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          echo $DOCKER_PASSWORD | podman login --username $DOCKER_USERNAME --password-stdin docker.io
+
+      - name: Push container image to Docker Hub
+        run: podman push docker.io/mohamedeid123/java-hello-app:v1.5
+  
+  # Job to deploy to Minikube
+  
+  deploy:
+    name: Deploy to Minikube
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      
+    - name: Set up minikube
+      uses: sagikazarmark/setup-minikube-action@v0
+         
+    - name: Start Minikube
+      run: |
+        minikube start
+      
+    - name: Apply Kubernetes Deployment
+      run: kubectl apply -f Deployment-Service.yaml
+
+    - name: Check pods status
+      run: kubectl get pods
+
+    - name: Check services status
+      run: kubectl get services
+
+    - name: Wait for deployment to be available
+      run: kubectl rollout status deployment/java-app-deployment
+
+    - name: Check pods status
+      run: kubectl get pods
