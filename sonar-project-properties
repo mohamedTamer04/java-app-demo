@@ -1,0 +1,3 @@
+sonar.projectkey=mohamedTamer04_java-app-demo
+sonar.organization=mohamedtamer04
+sonar.sources=.
