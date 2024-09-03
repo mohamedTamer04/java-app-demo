@@ -10,7 +10,7 @@ on:
 
 jobs:
 
-  # Job to run tests using SonarCloud
+  # Job to run a scan using SonarCloud
   test:
     name: Scan with SonarCloud
     runs-on: ubuntu-latest
